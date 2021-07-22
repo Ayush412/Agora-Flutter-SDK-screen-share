@@ -1,0 +1,35 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:tools="http://schemas.android.com/tools"
+  package="io.agora.agora_rtc_engine">
+
+  <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.RECORD_AUDIO" />
+  <uses-permission android:name="android.permission.CAMERA" />
+  <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+  <uses-permission android:name="android.permission.BLUETOOTH" />
+  <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+  <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+  <uses-permission
+    android:name="android.permission.READ_PRIVILEGED_PHONE_STATE"
+    tools:ignore="ProtectedPermissions" />
+
+  <!--Added for screen share-->  
+  <application>
+    <activity
+        android:name="io.agora.rtc.ss.impl.ScreenCapture$ScreenCaptureAssistantActivity"
+        android:process=":screensharingsvc"
+        android:screenOrientation="fullUser"
+        android:theme="@android:style/Theme.Translucent" />
+    <service
+        android:name="io.agora.rtc.ss.impl.ScreenSharingService"
+        android:stopWithTask="true"
+        android:process=":screensharingsvc">
+        <intent-filter>
+            <action android:name="android.intent.action.screenshare" />
+        </intent-filter>
+    </service>
+  </application>
+
+</manifest>
