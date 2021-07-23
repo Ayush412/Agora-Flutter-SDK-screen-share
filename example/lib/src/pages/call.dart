@@ -25,8 +25,9 @@ class _CallPageState extends State<CallPage> {
   final _users = <int>[];
   final _infoStrings = <String>[];
   bool muted = false;
-  bool sharing = false;
+  bool isSharing = false;
   bool allowSharing = true;
+  bool beginSharing = false;
   late RtcEngine _engine;
 
   @override
@@ -38,7 +39,7 @@ class _CallPageState extends State<CallPage> {
 
   @override
   void dispose() {
-    if(sharing){
+    if(isSharing){
        _engine.screenShare(false, APP_ID, Token, widget.channelName!);
     }
     // clear users
@@ -107,7 +108,26 @@ class _CallPageState extends State<CallPage> {
         final info = 'firstRemoteVideo: $uid ${width}x $height';
         _infoStrings.add(info);
       });
-    }));
+    }, remoteVideoStateChanged: (uid, state, reason, elapsed) {
+      if(uid == 10000){
+        print("SS video state: $state");
+        checkPermission(state);
+      }
+    }
+    ));
+  }
+
+  void checkPermission(VideoRemoteState state){
+    if(state == VideoRemoteState.Starting && beginSharing == true){
+      setState(() {
+        isSharing = true;
+      });
+    }
+    else if (state == VideoRemoteState.Stopped && beginSharing == false){
+      setState(() {
+        isSharing = false;
+      });
+    }
   }
 
   /// Helper function to get list of native views
@@ -116,7 +136,7 @@ class _CallPageState extends State<CallPage> {
     // if (widget.role == ClientRole.Broadcaster) {
     //   list.add(RtcLocalView.SurfaceView());
     // }
-    if(_users.contains(10000)){
+    if(_users.contains(10000) && beginSharing == false){
       allowSharing = false;
       list.clear();
       list.add(RtcRemoteView.SurfaceView(uid: 10000));
@@ -229,13 +249,13 @@ class _CallPageState extends State<CallPage> {
           allowSharing ? RawMaterialButton(
             onPressed: _onToggleShare,
             child: Icon(
-              sharing ? Icons.stop_screen_share : Icons.mobile_screen_share,
-              color: sharing ? Colors.white : Colors.blueAccent,
+              isSharing ? Icons.stop_screen_share : Icons.mobile_screen_share,
+              color: isSharing ? Colors.white : Colors.blueAccent,
               size: 20.0,
             ),
             shape: CircleBorder(),
             elevation: 2.0,
-            fillColor: sharing ? Colors.red : Colors.white,
+            fillColor: isSharing ? Colors.red : Colors.white,
             padding: const EdgeInsets.all(12.0),
           ) : Container()
         ],
@@ -295,7 +315,7 @@ class _CallPageState extends State<CallPage> {
 
   //Users local cam feed
   Widget localPreview(){
-    if(!sharing){
+    if(!isSharing){
       return Container(
         alignment: Alignment.bottomRight,
         padding: const EdgeInsets.only(right: 20),
@@ -331,26 +351,29 @@ class _CallPageState extends State<CallPage> {
 
   //Added
   void _onToggleShare() async{
-    setState(() {
-      sharing = ! sharing;
-    });
-
-    //Leave video channel to allow only screen share stream visible
-    if(sharing){
-      _engine.leaveChannel();
+    if(isSharing){
+      beginSharing = false;
     }
-
-    //Rejoin video channel after screen sharing stops
     else{
-      _engine.enableVideo();
-      await _engine.setChannelProfile(ChannelProfile.LiveBroadcasting);
-      await _engine.setClientRole(widget.role!);
-      _addAgoraEventHandlers();
-      await _engine.joinChannel(Token, widget.channelName!, null, 0);
+      beginSharing = true;
     }
+
+    // //Leave video channel to allow only screen share stream visible
+    // if(sharing){
+    //   _engine.leaveChannel();
+    // }
+
+    // //Rejoin video channel after screen sharing stops
+    // else{
+    //   _engine.enableVideo();
+    //   await _engine.setChannelProfile(ChannelProfile.LiveBroadcasting);
+    //   await _engine.setClientRole(widget.role!);
+    //   _addAgoraEventHandlers();
+    //   await _engine.joinChannel(Token, widget.channelName!, null, 0);
+    // }
     
     //Invoke screen share method channel on kotlin side
-    _engine.screenShare(sharing, APP_ID, Token, widget.channelName!);
+    _engine.screenShare(beginSharing, APP_ID, Token, widget.channelName!);
   }
 
   @override
